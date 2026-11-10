@@ -110,11 +110,11 @@ window.__ModuleLoader__.load({
       return { text: data.text || '', at: data.at || 0 }
     }
 
-    async function savePrefix(sessionId, text) {
+    async function savePrefix(sessionId, text, provider) {
       const res = await fetch(`${API}/prefix`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, text }),
+        body: JSON.stringify({ sessionId, text, provider }),
       })
       return res.json()
     }
@@ -164,7 +164,7 @@ window.__ModuleLoader__.load({
         setBusy(true)
         setMsg({ text: '', kind: '' })
         try {
-          const r = await savePrefix(sessionId, payload)
+          const r = await savePrefix(sessionId, payload, modelProvider)
           if (r && r.ok) {
             setSaved(r.text || '')
             setText(r.text || '')
