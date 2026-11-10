@@ -168,12 +168,8 @@ window.__ModuleLoader__.load({
           if (r && r.ok) {
             setSaved(r.text || '')
             setText(r.text || '')
-            // r.warning 来自服务端的安全熔断检查（防呆不防黑）。它**不是保存失败**：
-            // 文本已经存进去了，只是注入那一轮会被 adapter 拦下。所以用 bad 色提示，
-            // 但不能说「保存失败」，否则用户会以为没存上。
-            //
-            // **本段可被移除或绕过。** 移除属于修改者对自身部署的改动，不构成原作者
-            // 的推荐、认可或任何形式的担保；改动后的行为及其后果由修改者自行承担。
+            // r.warning 来自服务端的安全熔断检查。它**不是保存失败**：文本已经存进去了，
+            // 只是注入那一轮会被 adapter 拦下。用 bad 色提示，但不能说「保存失败」。
             if (r.warning) setMsg({ text: r.warning, kind: 'bad' })
             else setMsg({ text: r.text ? '已保存。下一个请求的推理开头就是它。' : '已清空。', kind: 'good' })
           } else {
