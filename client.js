@@ -114,7 +114,8 @@ window.__ModuleLoader__.load({
       const res = await fetch(`${API}/prefix`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, text, provider }),
+        // clientVersion 是临时诊断：确认跑的是新前端还是浏览器缓存的旧包
+        body: JSON.stringify({ sessionId, text, provider, clientVersion: 3 }),
       })
       return res.json()
     }
