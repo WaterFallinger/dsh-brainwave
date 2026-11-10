@@ -117,23 +117,6 @@ window.__ModuleLoader__.load({
       return res.json()
     }
 
-    /**
-     * 这个会话现在是不是跑在 brainwave 上。
-     *
-     * 不是的话整个按钮不渲染——前缀只在 brainwave 的 adapter 里会被塞进推理开头，
-     * 在别的模型上设前缀是假的。宁可按钮不存在，也不给一个「设了但没用」的控件。
-     */
-    async function loadActive(sessionId) {
-      if (!sessionId) return false
-      try {
-        const res = await fetch(`${API}/state?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' })
-        const data = await res.json()
-        return Boolean(data && data.ok && data.active)
-      } catch {
-        return false
-      }
-    }
-
     /** 输入框里那个按钮 + 展开后的面板 */
     function ActivityControl(props) {
       // sessionId 由宿主的 session-scope slot 自动注入。拿不到时退回空串：
@@ -144,7 +127,6 @@ window.__ModuleLoader__.load({
       const [text, setText] = useState('')
       const [saved, setSaved] = useState('')
       const [busy, setBusy] = useState(false)
-      const [fallbackActive, setFallbackActive] = useState(null) // state API 的兜底结果
       const [msg, setMsg] = useState({ text: '', kind: '' })
 
       // 主判据：模型选择器上那个 provider（model.label slot 捕获的，实时）
@@ -158,22 +140,10 @@ window.__ModuleLoader__.load({
         } catch { /* 读不到就先空着 */ }
       }, [sessionId])
 
-      // 兜底：model.label 那条路没拿到时（比如 slot 注册失败），问一次 state API。
-      // 那条路只能告诉你「上次请求走的谁」，新会话还没发消息时是空的。
-      useEffect(() => {
-        if (modelProvider) return   // 主判据已经有了，不用查
-        let dead = false
-        loadActive(sessionId).then((v) => { if (!dead) setFallbackActive(v) })
-        return () => { dead = true }
-      }, [sessionId, modelProvider])
-
       useEffect(() => { refresh() }, [refresh])
 
-      // 主判据优先；都没有就当作「不是 brainwave」（不渲染按钮）
-      // 用前缀匹配而不是全等：调试变体 `brainwave-debug` 也要能用同一个前缀面板
-      const active = modelProvider
-        ? modelProvider === 'brainwave' || modelProvider.startsWith('brainwave-')
-        : fallbackActive === true
+      // 是否是 brainwave 系：用前缀匹配而不是全等，调试变体 `brainwave-debug`
+      // 共用同一个前缀面板。真正的判定放在下面的 `confirmedOther` 里。
 
       const toggle = () => {
         const next = !open
@@ -205,9 +175,17 @@ window.__ModuleLoader__.load({
         await save()
       }
 
-      // 不在 brainwave 上就整个不渲染：前缀只有 brainwave 的 adapter 会塞进推理，
-      // 别的模型上设了也是假的。宁可按钮不存在。
-      if (active !== true) return null
+      // 只在「明确确认当前模型不是 brainwave」时隐藏，拿不准就显示。
+      //
+      // 为什么不再用 `active === true` 才渲染：主判据要靠宿主把 model.label slot
+      // 渲染成 trigger 形态，那件事不保证发生；兜底 state API 又只在会话真的发过
+      // 一次请求之后才有值。新建会话切到 brainwave、还没开口的那一瞬间，两条路
+      // 都是空的，按钮就被藏掉了——用户会连入口都找不到。误报看得见也纠得回来，
+      // 漏报不行。
+      const confirmedOther = Boolean(modelProvider) &&
+        modelProvider !== 'brainwave' &&
+        !modelProvider.startsWith('brainwave-')
+      if (confirmedOther) return null
 
       if (!open) {
         const has = Boolean(saved)
