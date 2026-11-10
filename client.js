@@ -119,6 +119,24 @@ window.__ModuleLoader__.load({
       return res.json()
     }
 
+    /**
+     * 从 DOM 上直接读当前 provider。
+     *
+     * 为什么需要这条：`model.label` slot 是拿 provider 的正路，但实测经常拿不到
+     * （注册没生效、或者组件没渲染）。而 DSH 在模型名外层写了 `data-provider-id`
+     * 属性——那是它自己文档里说明的样式定位点，稳得多。
+     *
+     * 取第一个：composer 触发按钮比菜单项先渲染，但菜单展开时可能选错，
+     * 所以调用方要优先用 slot 拿到的值，这条只是兜底。
+     */
+    function providerFromDom() {
+      try {
+        const el = document.querySelector('[data-provider-id]')
+        const id = el && el.getAttribute('data-provider-id')
+        return id || ''
+      } catch { return '' }
+    }
+
     /** 输入框里那个按钮 + 展开后的面板 */
     function ActivityControl(props) {
       // sessionId 由宿主的 session-scope slot 自动注入。拿不到时退回空串：
@@ -166,7 +184,7 @@ window.__ModuleLoader__.load({
         setBusy(true)
         setMsg({ text: '', kind: '' })
         try {
-          const r = await savePrefix(sessionId, payload, modelProvider)
+          const r = await savePrefix(sessionId, payload, modelProvider || providerFromDom())
           if (r && r.ok) {
             setSaved(r.text || '')
             setText(r.text || '')
