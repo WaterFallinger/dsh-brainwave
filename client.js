@@ -103,11 +103,11 @@ window.__ModuleLoader__.load({
 
     /** 读当前会话的前缀 */
     async function loadPrefix(sessionId) {
-      if (!sessionId) return { text: '', at: 0 }
+      if (!sessionId) return { text: '', at: 0, maxChars: 500 }
       const res = await fetch(`${API}/prefix?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' })
       const data = await res.json()
       if (!data || !data.ok) throw new Error((data && data.rejected && data.rejected[0]) || '读不到前缀')
-      return { text: data.text || '', at: data.at || 0 }
+      return { text: data.text || '', at: data.at || 0, maxChars: data.maxChars || 500 }
     }
 
     async function savePrefix(sessionId, text, provider) {
@@ -129,6 +129,7 @@ window.__ModuleLoader__.load({
       const [text, setText] = useState('')
       const [saved, setSaved] = useState('')
       const [busy, setBusy] = useState(false)
+      const [maxChars, setMaxChars] = useState(500) // 服务端配置值，刷新时同步
       const [msg, setMsg] = useState({ text: '', kind: '' })
 
       // 主判据：模型选择器上那个 provider（model.label slot 捕获的，实时）
@@ -139,6 +140,7 @@ window.__ModuleLoader__.load({
           const r = await loadPrefix(sessionId)
           setText(r.text)
           setSaved(r.text)
+          setMaxChars(r.maxChars || 500)
         } catch { /* 读不到就先空着 */ }
       }, [sessionId])
 
@@ -214,7 +216,7 @@ window.__ModuleLoader__.load({
           ))
       }
 
-      const left = 500 - text.length
+      const left = maxChars - text.length
       return h('div', { className: 'bw_panel' },
         h('div', { className: 'bw_head' },
           h('span', { className: 'bw_title' }, '思考前缀'),
@@ -229,7 +231,7 @@ window.__ModuleLoader__.load({
           spellCheck: false,
         }),
         h('div', { className: 'bw_row' },
-          h('span', { className: 'bw_count' }, text.length + ' / 500'),
+          h('span', { className: 'bw_count' }, text.length + ' / ' + maxChars),
           h('span', { className: 'bw_grow' }),
           h('button', { className: 'bw_act', onClick: toggle }, '收起'),
           h('button', { className: 'bw_act', onClick: () => clear(), disabled: busy || !text }, '清空'),
