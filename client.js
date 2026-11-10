@@ -62,6 +62,7 @@ window.__ModuleLoader__.load({
         padding: 6px 10px; border-radius: 8px; cursor: pointer;
         border: 1px solid rgba(128,128,128,.28);
         background: transparent; color: inherit; opacity: .78;
+        white-space: nowrap;
         transition: background .12s ease, opacity .12s ease, border-color .12s ease;
       }
       .bw_btn:hover { opacity: 1; background: rgba(128,128,128,.12); }
@@ -89,11 +90,12 @@ window.__ModuleLoader__.load({
         font: inherit; font-size: 12.5px; padding: 6px 12px; border-radius: 8px;
         cursor: pointer; border: 1px solid rgba(128,128,128,.3);
         background: transparent; color: inherit;
+        white-space: nowrap; flex: none;
       }
       .bw_act:hover { background: rgba(128,128,128,.12); }
       .bw_act.primary { border-color: rgba(126,168,255,.7); background: rgba(126,168,255,.16); }
       .bw_act:disabled { opacity: .45; cursor: default; }
-      .bw_count { font-size: 11.5px; opacity: .55; font-variant-numeric: tabular-nums; }
+      .bw_count { font-size: 11.5px; opacity: .55; font-variant-numeric: tabular-nums; white-space: nowrap; flex: none; }
       .bw_msg { font-size: 12px; padding: 6px 10px; border-radius: 7px; background: rgba(128,128,128,.1); }
       .bw_msg.bad { background: rgba(255,120,120,.16); }
       .bw_msg.good { background: rgba(120,200,140,.16); }
@@ -153,13 +155,19 @@ window.__ModuleLoader__.load({
         if (next) { setMsg({ text: '', kind: '' }); refresh() }
       }
 
-      const save = async () => {
+      /**
+       * 保存。传 `value` 可以覆盖输入框里的当前值——清空要用它，
+       * 因为 `setText('')` 之后同一次事件里读到的 `text` 还是旧值（React 状态更新是异步的）。
+       */
+      const save = async (value) => {
+        const payload = value === undefined ? text : value
         setBusy(true)
         setMsg({ text: '', kind: '' })
         try {
-          const r = await savePrefix(sessionId, text)
+          const r = await savePrefix(sessionId, payload)
           if (r && r.ok) {
             setSaved(r.text || '')
+            setText(r.text || '')
             setMsg({ text: r.text ? '已保存。下一个请求的推理开头就是它。' : '已清空。', kind: 'good' })
           } else {
             setMsg({ text: ((r && r.rejected) || ['保存失败']).join('；'), kind: 'bad' })
@@ -170,9 +178,10 @@ window.__ModuleLoader__.load({
         setBusy(false)
       }
 
+      /** 清空 = 立刻把空串存到服务器，不是只清输入框 */
       const clear = async () => {
         setText('')
-        await save()
+        await save('')
       }
 
       // 只在「明确确认当前模型不是 brainwave」时隐藏，拿不准就显示。
@@ -220,8 +229,8 @@ window.__ModuleLoader__.load({
           h('span', { className: 'bw_count' }, text.length + ' / 500'),
           h('span', { className: 'bw_grow' }),
           h('button', { className: 'bw_act', onClick: toggle }, '收起'),
-          h('button', { className: 'bw_act', onClick: clear, disabled: busy || !text }, '清空'),
-          h('button', { className: 'bw_act primary', onClick: save, disabled: busy }, busy ? '保存中…' : '保存')),
+          h('button', { className: 'bw_act', onClick: () => clear(), disabled: busy || !text }, '清空'),
+          h('button', { className: 'bw_act primary', onClick: () => save(), disabled: busy }, busy ? '保存中…' : '保存')),
         msg.text ? h('div', { className: 'bw_msg ' + (msg.kind || '') }, msg.text) : null,
         left < 0 ? h('div', { className: 'bw_msg bad' }, '超了 ' + (-left) + ' 字，保存会被拒绝') : null,
       )
