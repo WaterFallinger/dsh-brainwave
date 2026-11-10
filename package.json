@@ -1,0 +1,55 @@
+{
+  "name": "dsh-brainwave",
+  "version": "0.1.0",
+  "description": "福至心灵 · brainwave：在推理起点注入一段你自己写的话，让 DeepSeek 从另一个起跑线开始想。",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./adapter": "./lib/adapter.js",
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh": ">=0.1.7-rc.1 <0.3.0-0",
+    "@deepseek-ai/dsh-llm": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-llm": {
+      "optional": true
+    }
+  },
+  "files": [
+    "lib",
+    "client.js",
+    "cordis.patch.yml",
+    "docs",
+    "README.md",
+    "package.json"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "reasoning",
+    "prefix",
+    "brainwave"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": false,
+      "inject": []
+    }
+  }
+}
